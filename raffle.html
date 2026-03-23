@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>前端抽奖网页</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#0f1a30;
+      --text:#e9eefc;
+      --muted:#9fb0d0;
+      --accent:#6aa6ff;
+      --accent2:#7cf7c4;
+      --danger:#ff6a7a;
+      --border:rgba(255,255,255,.10);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --item-h: 46px;
+      --radius: 16px;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "PingFang SC","Microsoft YaHei", sans-serif;
+      background: radial-gradient(1200px 700px at 20% 0%, rgba(106,166,255,.22), transparent 55%),
+                  radial-gradient(900px 600px at 90% 20%, rgba(124,247,196,.16), transparent 50%),
+                  var(--bg);
+      color:var(--text);
+    }
+
+    .wrap{
+      max-width: 980px;
+      margin: 28px auto;
+      padding: 0 14px 28px;
+    }
+
+    h1{
+      margin: 0 0 16px;
+      font-size: 22px;
+      letter-spacing:.2px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 420px;
+      gap: 14px;
+      align-items:start;
+    }
+    @media (max-width: 920px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    label{
+      display:block;
+      color:var(--muted);
+      font-size: 13px;
+      margin: 6px 0 8px;
+    }
+
+    textarea{
+      width:100%;
+      resize: vertical;
+      min-height: 140px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.22);
+      color: var(--text);
+      outline: none;
+      line-height: 1.6;
+    }
+    textarea:focus{
+      border-color: rgba(106,166,255,.55);
+      box-shadow: 0 0 0 4px rgba(106,166,255,.14);
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      margin-top: 10px;
+    }
+
+    input[type="number"]{
+      width: 120px;
+      padding: 9px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.22);
+      color: var(--text);
+      outline:none;
+    }
+
+    input[type="checkbox"]{
+      transform: translateY(1px);
+      margin-right: 8px;
+      accent-color: var(--accent);
+    }
+
+    button{
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      cursor:pointer;
+      transition: transform .05s ease, border-color .15s ease, background .15s ease, opacity .15s ease;
+      user-select:none;
+    }
+    button:hover{ border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.08); }
+    button:active{ transform: translateY(1px); }
+    button:disabled{ opacity:.55; cursor:not-allowed; }
+
+    .btn-primary{
+      background: linear-gradient(135deg, rgba(106,166,255,.28), rgba(124,247,196,.16));
+      border-color: rgba(106,166,255,.45);
+    }
+    .btn-danger{
+      border-color: rgba(255,106,122,.45);
+      background: rgba(255,106,122,.10);
+    }
+
+    .spinner{
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+    }
+
+    .viewport{
+      position:relative;
+      height: var(--item-h);
+      overflow:hidden;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.18);
+    }
+
+    .pointer{
+      position:absolute;
+      left:0; right:0;
+      top: calc(var(--item-h) / 2 - 1px);
+      height:2px;
+      background: linear-gradient(90deg, transparent, rgba(124,247,196,.95), transparent);
+      pointer-events:none;
+      z-index:3;
+    }
+
+    .track{
+      display:flex;
+      flex-direction:column;
+      will-change: transform;
+      transform: translateY(0);
+    }
+
+    .item{
+      height: var(--item-h);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 0 12px;
+      font-size: 16px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      color: rgba(233,238,252,.95);
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+    }
+    .item:nth-child(odd){
+      background: linear-gradient(180deg, rgba(106,166,255,.06), rgba(255,255,255,.01));
+    }
+
+    .current{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+
+    .winner-badge{
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(124,247,196,.35);
+      background: rgba(124,247,196,.10);
+      color: var(--accent2);
+      font-weight: 600;
+      font-size: 14px;
+      white-space:nowrap;
+    }
+
+    .hint{
+      color: var(--muted);
+      font-size: 13px;
+      line-height:1.5;
+    }
+
+    ul{
+      margin: 10px 0 0;
+      padding: 0;
+      list-style:none;
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+    }
+    li{
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .idx{
+      color: var(--muted);
+      font-size: 13px;
+      white-space:nowrap;
+    }
+    .name{
+      font-weight: 700;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      flex: 1;
+    }
+
+    .small{
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 10px;
+      line-height:1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>抽奖网页（前端演示）</h1>
+
+    <div class="grid">
+      <div class="card">
+        <label for="participants">参赛者列表（每行一个；也可用逗号分隔）</label>
+        <textarea id="participants" spellcheck="false">Alice
+Bob
+Charlie
+David
+Eve
+Frank
+Grace
+Heidi
+Ivan
+Judy</textarea>
+
+        <div class="row">
+          <button id="drawOneBtn" class="btn-primary">开始抽取（1人）</button>
+          <button id="drawMultiBtn">连续抽取</button>
+
+          <input id="multiCount" type="number" min="1" max="200" value="3" />
+          <label style="margin:0;display:flex;align-items:center;gap:0;cursor:pointer;">
+            <input id="noRepeat" type="checkbox" checked />
+            不重复抽取
+          </label>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <button id="resetBtn" class="btn-danger">重置</button>
+        </div>
+
+        <div class="small">
+          提示：这是纯前端随机展示，刷新页面会清空中奖记录；如需权威抽奖请在服务端做记录与校验。
+        </div>
+      </div>
+
+      <div class="card spinner">
+        <div class="viewport" aria-live="polite" aria-atomic="true">
+          <div id="track" class="track"></div>
+          <div class="pointer"></div>
+        </div>
+
+        <div class="current">
+          <div class="winner-badge" id="currentWinner">点击开始抽取</div>
+          <div class="hint" id="statusHint">准备就绪</div>
+        </div>
+
+        <div style="margin-top:6px;">
+          <label style="margin:0 0 8px;">中奖名单</label>
+          <ul id="winnersList"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const elParticipants = document.getElementById('participants');
+    const elTrack = document.getElementById('track');
+    const elCurrentWinner = document.getElementById('currentWinner');
+    const elStatusHint = document.getElementById('statusHint');
+    const elWinnersList = document.getElementById('winnersList');
+
+    const elDrawOneBtn = document.getElementById('drawOneBtn');
+    const elDrawMultiBtn = document.getElementById('drawMultiBtn');
+    const elResetBtn = document.getElementById('resetBtn');
+    const elMultiCount = document.getElementById('multiCount');
+    const elNoRepeat = document.getElementById('noRepeat');
+
+    const itemHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--item-h')) || 46;
+
+    let remaining = [];
+    let winners = [];
+    let busy = false;
+
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+    function parseParticipants() {
+      const raw = (elParticipants.value || '')
+        .split(/\r?\n|[,，]/g)
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      // 去重（输入里重复的人只保留一个）
+      return Array.from(new Set(raw));
+    }
+
+    function buildTrack(list, repeatCount) {
+      elTrack.innerHTML = '';
+
+      // 生成“重复列表”，让滚动更顺滑
+      const frag = document.createDocumentFragment();
+      for (let r = 0; r < repeatCount; r++) {
+        for (const name of list) {
+          const div = document.createElement('div');
+          div.className = 'item';
+          div.textContent = name;
+          frag.appendChild(div);
+        }
+      }
+      elTrack.appendChild(frag);
+    }
+
+    function setUIBusy(isBusy) {
+      busy = isBusy;
+      elDrawOneBtn.disabled = isBusy;
+      elDrawMultiBtn.disabled = isBusy;
+      elResetBtn.disabled = isBusy;
+    }
+
+    function clearWinnersUI() {
+      elWinnersList.innerHTML = '';
+      elCurrentWinner.textContent = '点击开始抽取';
+      elStatusHint.textContent = '准备就绪';
+    }
+
+    function addWinnerUI(name) {
+      const li = document.createElement('li');
+      const idx = document.createElement('div');
+      idx.className = 'idx';
+      idx.textContent = `第 ${winners.length} 名`;
+
+      const nm = document.createElement('div');
+      nm.className = 'name';
+      nm.textContent = name;
+
+      li.appendChild(idx);
+      li.appendChild(nm);
+      elWinnersList.appendChild(li);
+    }
+
+    async function animatePickOne() {
+      const list = remaining.slice();
+      const n = list.length;
+
+      if (n === 0) {
+        elStatusHint.textContent = '参赛者为空（或已全部抽完）';
+        return null;
+      }
+
+      const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const winnerIndex = Math.floor(Math.random() * n);
+      const winnerName = list[winnerIndex];
+
+      // 如果用户启用“不重复抽取”，就从 remaining 中移除
+      if (elNoRepeat.checked) {
+        remaining.splice(winnerIndex, 1);
+      }
+
+      // 无动画：直接显示
+      if (prefersReduced) {
+        winners.push(winnerName);
+        elCurrentWinner.textContent = `中奖：${winnerName}`;
+        elStatusHint.textContent = '抽取完成（无动画模式）';
+        addWinnerUI(winnerName);
+        return winnerName;
+      }
+
+      // 构建滚动轨道
+      const spinRounds = 12; // 轮数：越大越久
+      const repeatCount = spinRounds + 6;
+
+      buildTrack(list, repeatCount);
+
+      // 让开始位置随机，结束位置对齐到 winnerIndex（以列表行高做 translateY）
+      const startIndex = Math.floor(Math.random() * n);
+      // 在结束时：targetIndex % n === winnerIndex
+      const stepsToWinner = (winnerIndex - startIndex + n) % n;
+      const targetIndex = startIndex + spinRounds * n + stepsToWinner;
+
+      // 先定位到起点
+      elTrack.style.transition = 'none';
+      elTrack.style.transform = `translateY(${-itemHeight * startIndex}px)`;
+      // 强制重绘，确保 transition 生效
+      void elTrack.offsetHeight;
+
+      setUIBusy(true);
+      elStatusHint.textContent = '正在抽取中...';
+      elCurrentWinner.textContent = '抽取进行中';
+
+      // 触发动画
+      const durationMs = 4200;
+      elTrack.style.transition = `transform ${durationMs}ms cubic-bezier(.14,.86,.2,1)`;
+      elTrack.style.transform = `translateY(${-itemHeight * targetIndex}px)`;
+
+      // 等动画结束
+      await sleep(durationMs + 50);
+
+      // 动画完成后更新 UI
+      winners.push(winnerName);
+      elCurrentWinner.textContent = `中奖：${winnerName}`;
+      elStatusHint.textContent = '抽取完成';
+      addWinnerUI(winnerName);
+
+      setUIBusy(false);
+      return winnerName;
+    }
+
+    async function drawOne() {
+      if (busy) return;
+
+      const parsed = parseParticipants();
+      if (!parsed.length) {
+        elStatusHint.textContent = '请先在输入框加入参赛者';
+        return;
+      }
+
+      // 单抽时：初始化一次 remaining；随后按“不重复”规则逐个移除
+      if (!remaining.length) {
+        remaining = parsed.slice();
+      }
+
+      // 如果“不重复”开启，且你修改了输入导致剩余集合可能不一致，这里重置一次 remaining
+      // （避免用户改了名单后仍沿用旧的 remaining）
+      if (elNoRepeat.checked) {
+        remaining = parsed.slice();
+        winners = [];
+        elWinnersList.innerHTML = '';
+        clearWinnersUI();
+      }
+
+      await animatePickOne();
+    }
+
+    async function drawMulti() {
+      if (busy) return;
+
+      const parsed = parseParticipants();
+      if (!parsed.length) {
+        elStatusHint.textContent = '请先在输入框加入参赛者';
+        return;
+      }
+
+      // 连抽前先根据当前输入重置
+      remaining = parsed.slice();
+      winners = [];
+      elWinnersList.innerHTML = '';
+      clearWinnersUI();
+
+      let count = Number(elMultiCount.value || 1);
+      if (!Number.isFinite(count) || count < 1) count = 1;
+      count = Math.floor(count);
+
+      const realTimes = elNoRepeat.checked ? Math.min(count, parsed.length) : count;
+
+      elStatusHint.textContent = `连续抽取中：预计 ${realTimes} 次`;
+      for (let i = 0; i < realTimes; i++) {
+        if (elNoRepeat.checked && remaining.length === 0) break;
+        await animatePickOne();
+        await sleep(350); // 两次抽取间隔
+      }
+
+      elStatusHint.textContent = '连续抽取完成';
+      setUIBusy(false);
+    }
+
+    function resetAll() {
+      winners = [];
+      remaining = [];
+      elWinnersList.innerHTML = '';
+      elTrack.innerHTML = '';
+      elCurrentWinner.textContent = '点击开始抽取';
+      elStatusHint.textContent = '已重置，准备就绪';
+      setUIBusy(false);
+    }
+
+    elDrawOneBtn.addEventListener('click', drawOne);
+    elDrawMultiBtn.addEventListener('click', drawMulti);
+    elResetBtn.addEventListener('click', resetAll);
+
+    // 初始：预热轨道为空态
+    clearWinnersUI();
+  </script>
+</body>
+</html>
+
